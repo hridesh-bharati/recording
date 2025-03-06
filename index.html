@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Voice Recorder</title>
+</head>
+<body>
+
+    <h2>🎤 Mobile Voice Recorder</h2>
+    <p id="status">Click "Grant Access" before recording.</p>
+
+    <button onclick="requestMicrophone()">🎙 Grant Microphone Access</button>
+    <button onclick="startRecording()" disabled>🔴 Start Recording</button>
+    <button onclick="stopRecording()" disabled>⏹ Stop</button>
+    <audio id="audioPlayback" controls></audio>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        async function requestMicrophone() {
+            try {
+                let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                document.querySelector("button[onclick='startRecording()']").disabled = false;
+                document.getElementById("status").innerText = "Microphone Access Granted! You can record now.";
+                stream.getTracks().forEach(track => track.stop()); // Close mic after permission check
+            } catch (error) {
+                alert("Microphone access denied! Please allow permissions in settings.");
+                console.error(error);
+            }
+        }
+
+        async function startRecording() {
+            try {
+                let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    let audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+                    let audioUrl = URL.createObjectURL(audioBlob);
+                    document.getElementById("audioPlayback").src = audioUrl;
+                };
+
+                mediaRecorder.start();
+                document.querySelector("button[onclick='startRecording()']").disabled = true;
+                document.querySelector("button[onclick='stopRecording()']").disabled = false;
+            } catch (error) {
+                alert("Microphone access denied! Try enabling permissions.");
+                console.error(error);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder) {
+                mediaRecorder.stop();
+                document.querySelector("button[onclick='startRecording()']").disabled = false;
+                document.querySelector("button[onclick='stopRecording()']").disabled = true;
+            }
+        }
+    </script>
+
+</body>
+</html>
